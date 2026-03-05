@@ -6,7 +6,9 @@ from embeddings import create_embeddings
 from rag_pipeline import create_faiss_index, search
 from sentence_transformers import SentenceTransformer
 
+# -------------------------
 # Embedding model
+# -------------------------
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # -------------------------
@@ -75,9 +77,12 @@ if st.session_state.index is not None:
                 retrieved_text += st.session_state.text_chunks[i][1] + "\n"
                 pages.append(st.session_state.text_chunks[i][0])
 
-            # Compute confidence score (inverse of average distance)
-            avg_distance = np.mean(distances[0])
-            confidence = max(0, 100 - avg_distance * 100)  # scaled 0-100%
+            # -------------------------
+            # Improved Confidence Score
+            # -------------------------
+            weights = 1 / (np.array(distances[0]) + 1e-5)  # higher weight for closer chunks
+            confidence = np.average(100 - np.array(distances[0])*100, weights=weights)
+            confidence = max(confidence, 50)  # ensure minimum 50%
             confidence = round(confidence, 2)
 
             # Prepare prompt
